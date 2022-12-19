@@ -20,7 +20,7 @@ export default (cards) =>  {
                                 const recipientPrimaryAccountNumber = encryptPan(cardNumber);
                                 return {
                                     country: 'UZ',
-                                    issuerName: 'Ipoteka',
+                                    issuerName: 'JSCMB Ipoteka-Bank',
                                     guid,
                                     recipientFirstName,
                                     recipientLastName,
