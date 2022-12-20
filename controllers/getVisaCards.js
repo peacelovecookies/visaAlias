@@ -13,7 +13,7 @@ const filter = (cards) =>  {
     for (const bin of bins) {
         const newCards = cards
                             .filter(({ cardNumber }) => cardNumber.startsWith(bin))
-                            .map(({ cardHolderName, cardNumber, rbsNumber: guid }) => {
+                            .map(({ cardHolderName, cardNumber, rbsNumber: guid, cardMask: maskedCard }) => {
                                 const [lastName, recipientFirstName] = cardHolderName.split(' ');
                                 const recipientLastName = `${lastName[0]}.`; // first letter of last name
                                 const typeNum = parseInt(cardNumber[8]); // 9th number of pan
@@ -22,6 +22,7 @@ const filter = (cards) =>  {
                                 return {
                                     country: 'UZ',
                                     issuerName: 'JSCMB Ipoteka-Bank',
+                                    maskedCard,
                                     guid,
                                     recipientFirstName,
                                     recipientLastName,
