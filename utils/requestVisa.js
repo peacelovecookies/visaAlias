@@ -48,10 +48,10 @@ export default async (path, payload, method = 'POST') => {
     } catch(e) {
         // console.log('Visa request error: ', e);
         const { response: { status, data } } = e;
+        // console.log('data: ', data);
         if (!data) return { status };
         const decryptedPayload = await decrypt(data);
-        // console.log('decryptedPayload: ', decryptedPayload);
-        // console.log('data: ', data);
+        console.log('decryptedPayload: ', decryptedPayload);
         return { status,  decryptedPayload };
     }
 };

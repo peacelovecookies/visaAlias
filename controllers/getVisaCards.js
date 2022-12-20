@@ -1,12 +1,13 @@
 import { config } from 'dotenv';
-import getTypeByBin from './getTypeByBin.js';
 
-import { encryptPan } from './crypto.js';
+import getTypeByBin from '../utils/getTypeByBin.js';
+import { encryptPan } from '../utils/crypto.js';
+import requestASBT from '../utils/requestASBT.js';
 
 config();
 const { OUR_BANK_BINS } = process.env;
 
-export default (cards) =>  {
+const filter = (cards) =>  {
     const bins = OUR_BANK_BINS.split(',');
     const result = []
     for (const bin of bins) {
@@ -32,4 +33,24 @@ export default (cards) =>  {
     }
 
     return result;
+};
+
+export default async (req, res) => {
+    const { body: { userPhone } } = req;
+    const { data: clientInfoData, status: clientInfoStatus} = await requestASBT('/intgr/clientph/validate-user', { username: userPhone });
+    if (clientInfoStatus !== 200 || clientInfoData.code !== 0) {
+        return res.status(clientInfoStatus).send({ data: clientInfoData });
+    }
+    const { clientId } = clientInfoData.object;
+    const { data: cardsData, status: cardsStatus } = await requestASBT('/intgr/bank/cards', { clientId });
+    if (cardsStatus !== 200 || cardsData.code !== 0) {
+        return res.status(cardsStatus).send({ data: cardsData });
+    }
+
+    const { object: cardList } = cardsData;
+    const visaCards = filter(cardList);
+    
+    if (visaCards.length === 0) return res.status(204);
+
+    return res.status(200).send(visaCards);
 };
