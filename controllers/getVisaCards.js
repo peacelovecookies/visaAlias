@@ -13,11 +13,12 @@ const filter = (cards) =>  {
     for (const bin of bins) {
         const newCards = cards
                             .filter(({ cardNumber }) => cardNumber.startsWith(bin))
-                            .map(({ cardHolderName, cardNumber, rbsNumber: guid, cardMask: maskedCard }) => {
+                            .map(({ cardHolderName, cardNumber, rbsNumber: guid, cardMask: maskedCard, expire }) => {
                                 const [lastName, recipientFirstName] = cardHolderName.split(' ');
                                 const recipientLastName = `${lastName[0]}.`; // first letter of last name
                                 const typeNum = parseInt(cardNumber[8]); // 9th number of pan
                                 const cardType = getTypeByBin(bin, typeNum);
+                                const [expYear, expMonth] = expire.split('-');
                                 const recipientPrimaryAccountNumber = encryptPan(cardNumber);
                                 return {
                                     country: 'UZ',
@@ -28,6 +29,7 @@ const filter = (cards) =>  {
                                     recipientLastName,
                                     cardType,
                                     recipientPrimaryAccountNumber, // !!! this pan is encrypted !!!
+                                    expiryDate: `${expYear}-${expMonth}`,
                                 };
                             });
         result.push(...newCards);
@@ -48,6 +50,7 @@ export default async (req, res) => {
         return res.status(cardsStatus).send({ data: cardsData });
     }
 
+    console.log('cards data: ', cardsData);
     const { object: cardList } = cardsData;
     const visaCards = filter(cardList);
     
