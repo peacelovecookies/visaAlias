@@ -1,6 +1,7 @@
 import fs from 'fs';
 import nodeJose from 'node-jose';
 import CryptoJS from 'crypto-js';
+import crypto from 'crypto';
 import { config } from 'dotenv';
 
 import * as url from 'url';
@@ -8,7 +9,7 @@ import path from 'path';
 const __dirname = url.fileURLToPath(new URL('.', import.meta.url));
 
 config();
-const { ENCRYPT_KEYID, SERVER_CERT_DIR, CLIENT_CERT_DIR, SECRET_WORD } = process.env;
+const { ENCRYPT_KEYID, SERVER_CERT_DIR, CLIENT_CERT_DIR, SECRET_WORD, CLIENT_CERT_PSWRD } = process.env;
 
 export const encrypt = async (payload) => {
     const payloadString = typeof payload === 'string' ? payload : JSON.stringify(payload);
@@ -38,21 +39,26 @@ export const encrypt = async (payload) => {
 };
 
 export const decrypt = async (encryptedPayloadString) => {
-    if (!encryptedPayloadString) return '';
+    if (!encryptedPayloadString) return {};
     const encryptedPayload = typeof encryptedPayloadString == 'string' ? JSON.parse(encryptedPayloadString) : encryptedPayloadString;
     // const keystore = nodeJose.JWK.createKeyStore();
     const decProps = {
         kid: ENCRYPT_KEYID,
         alg: 'RSA-OAEP-256',
-        enc: 'A128GCM'
+        enc: 'A128GCM',
+        kty: "RSA",
+        key_opts: ["wrapKey","enc"],
     };
     const pathToDecrCert = path.join(__dirname, '../src', CLIENT_CERT_DIR);
     const decryptionKey = fs.readFileSync(pathToDecrCert);
-    const key = await nodeJose.JWK.asKey(decryptionKey, 'PEM', decProps);
+    const privateKey = crypto
+                            .createPrivateKey({ key: decryptionKey, passphrase: CLIENT_CERT_PSWRD })
+                            .export({ type: 'pkcs8', format: 'pem' });
+    const key = await nodeJose.JWK.asKey(privateKey, 'PEM', decProps);
     const decrypted = await nodeJose.JWE
         .createDecrypt(key)
         .decrypt(encryptedPayload.encData, {contentAlg: 'A128GCM', alg: 'RSA-OAEP-256'});
-    const decryptedPayload = decrypted.payload.toString() ? JSON.parse(decrypted.payload.toString()) : '';
+    const decryptedPayload = decrypted.payload.toString() ? JSON.parse(decrypted.payload.toString()) : {};
     return decryptedPayload;
 };
 
